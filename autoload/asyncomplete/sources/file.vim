@@ -118,7 +118,7 @@ function! s:filename_map(prefix, cwd, base, escaped) abort
 endfunction
 
 " match chars that can preceed a path
-let s:anchor_pattern = '\([^[:fname:]]\|[,=]\)'
+let s:anchor_pattern = '\([^[:fname:]]\|[,:=]\)'
 
 function! s:find_path(opt, ctx, typed) abort
   let l:typed = a:typed[-(a:opt['config']['max_path_length']):]
