@@ -62,7 +62,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
     let l:prefix = l:prefix . '/'
   endif
 
-  let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail, g:asyncomplete_matchfuzzy)) . '*'
+  let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail, get(g:, 'asyncomplete_matchfuzzy', 0))) . '*'
   let l:script = 'shopt -s nullglob; cd ' . shellescape(l:cwd) . ' && printf ''%s\n'' ' . l:glob . ' | sort'
 
   let l:filectx = {
