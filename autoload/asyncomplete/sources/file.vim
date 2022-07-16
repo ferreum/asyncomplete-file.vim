@@ -16,7 +16,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
   let l:typed = a:ctx['typed']
   let l:col   = a:ctx['col']
 
-  let [l:kw, l:cwd] = s:find_path(a:ctx, l:typed)
+  let [l:kw, l:cwd, l:escaped] = s:find_path(a:ctx, l:typed)
   let l:kwlen = len(l:kw)
 
   if l:kwlen < 1
@@ -41,6 +41,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
         \ 'ctx': a:ctx,
         \ 'startcol': l:col - l:kwlen,
         \ 'cwd': l:cwd,
+        \ 'escaped': l:escaped,
         \ 'prefix': l:prefix,
         \ 'rawlist': [],
         \ }
@@ -62,20 +63,25 @@ function! s:exit(filectx, channel, code) abort
   let l:matches = split(join(a:filectx.rawlist, ''), '\n')
   let l:cwd = a:filectx.cwd
   let l:prefix = a:filectx.prefix
+  let l:escaped = a:filectx.escaped
 
-  call map(l:matches, {key, val -> s:filename_map(l:prefix, l:cwd, val)})
+  call map(l:matches, {key, val -> s:filename_map(l:prefix, l:cwd, val, l:escaped)})
   call filter(l:matches, {i, m -> m != v:null})
 
   call asyncomplete#complete(a:filectx.opt.name, a:filectx.ctx, a:filectx.startcol, l:matches)
 endfunction
 
-function! s:filename_map(prefix, cwd, base) abort
+function! s:filename_map(prefix, cwd, base, escaped) abort
   if empty(a:base) || a:base ==# '.' || a:base ==# '..'
     " filtered out later
     return v:null
   endif
 
-  let l:word = a:prefix . a:base
+  if a:escaped
+    let l:word = a:prefix . substitute(a:base, '[[:space:]*?&\\]', '\\\0', 'g')
+  else
+    let l:word = a:prefix . a:base
+  endif
 
   if isdirectory(a:cwd . '/' . a:base)
     let l:menu = '[dir]'
@@ -96,14 +102,20 @@ function! s:find_path(ctx, typed) abort
   let l:remaining = a:typed
   let l:tried = ''
   while 1
-    let l:add = matchstr(l:remaining, '\f\+\s*$')
+    let l:add = matchstr(l:remaining, '\f\+[[:space:]*?&\\]*$')
     if empty(l:add)
-      return ["", ""]
+      return ["", "", 0]
     endif
     let l:tried = l:add . l:tried
     let l:path = s:goodpath(a:ctx, l:tried)
     if !empty(l:path)
-      return [l:tried, l:path]
+      return [l:tried, l:path, 0]
+    endif
+    if l:tried =~# '\\.'
+      let l:path = s:goodpath(a:ctx, substitute(l:tried, '\\\(.\)', '\1', 'g'))
+      if !empty(l:path)
+        return [l:tried, l:path, 1]
+      endif
     endif
     let l:remaining = l:remaining[:(-len(l:add) - 1)]
   endwhile
