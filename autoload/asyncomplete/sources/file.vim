@@ -11,6 +11,7 @@ function! asyncomplete#sources#file#get_source_options(opts)
         \ })
   let l:opts['config'] = extend({
         \ 'max_path_length': 256,
+        \ 'max_glob_length': 16,
         \ }, get(l:opts, 'config', {}))
   return l:opts
 endfunction
@@ -43,6 +44,8 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
     " strip tail; fnamemodify strips duplicate trailing slashes
     let l:prefix = matchstr(l:kw, '^.*/')
   endif
+
+  let l:tail = l:tail[:(a:opt['config']['max_glob_length']-1)]
 
   let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail, get(g:, 'asyncomplete_matchfuzzy', 0))) . '*'
   let l:script = 'shopt -s nullglob; cd ' . shellescape(l:cwd) . ' && printf ''%s\n'' ' . l:glob
