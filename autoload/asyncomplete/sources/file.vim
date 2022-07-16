@@ -102,15 +102,18 @@ function! s:find_path(ctx, typed) abort
   let l:typed = a:typed[-get(g:, 'asyncomplete_max_filename', 256):]
   let l:kw = substitute(l:typed, '^\s*', '', '')
   while stridx(l:kw, '/') >= 0
-    let l:path = s:goodpath(a:ctx, l:kw)
-    if !empty(l:path)
-      return [l:kw, l:path, 0]
-    endif
     if l:kw =~# '\\.'
       let l:path = s:goodpath(a:ctx, substitute(l:kw, '\\\(.\)', '\1', 'g'))
       if !empty(l:path)
         return [l:kw, l:path, 1]
       endif
+    endif
+    let l:path = s:goodpath(a:ctx, l:kw)
+    if !empty(l:path)
+      if l:path =~# '[^\\]\(\\\\\)*\\$'
+        return [l:kw, l:path[:-2], 1]
+      endif
+      return [l:kw, l:path, 0]
     endif
     let l:kw = matchstr(l:kw, '\([^[:fname:]]\|[,=]\)\zs[\\[:fname:]].*')
   endwhile
