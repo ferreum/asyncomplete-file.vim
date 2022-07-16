@@ -98,7 +98,7 @@ endfunction
 function! s:find_path(ctx, typed) abort
   let l:remaining = a:typed
   let l:tried = ''
-  while l:remaining =~ '\S'
+  while 1
     let l:add = matchstr(l:remaining, '\f\+\s*$')
     if empty(l:add)
       return ["", ""]
@@ -110,7 +110,6 @@ function! s:find_path(ctx, typed) abort
     endif
     let l:remaining = l:remaining[:(-len(l:add) - 1)]
   endwhile
-  return ["", ""]
 endfunction
 
 function! s:goodpath(ctx, path) abort
