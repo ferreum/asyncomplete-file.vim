@@ -142,7 +142,7 @@ endfunction
 
 function! s:icasewildcard(str, fuzzy) abort
   return map(a:str, { i, c ->
-        \  (a:fuzzy && i >= 1 ? '*' : '') .
+        \  (a:fuzzy && (i >= 1 || c !=# '.') ? '*' : '') .
         \  (c =~# '^\a$' ? '[' . tolower(c) . toupper(c) . ']' : (c =~# '^[-._/]$' ? c : shellescape(c)))
         \ })
 endfunction
