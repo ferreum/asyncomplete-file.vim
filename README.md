@@ -38,6 +38,7 @@ au User asyncomplete_setup call asyncomplete#register_source(asyncomplete#source
     \ 'config': {
     \    'max_path_length': 256,
     \    'max_glob_length': 16,
+    \    'max_leading_length': 16,
     \ },
     \ }))
 ```
@@ -47,5 +48,9 @@ Note: `config` is optional. The shown values are the defaults.
   left of the cursor. If no existing directory is found, or there is no `/`
   character, no file completion is performed.
 - `max_glob_length` is the maximum length of the last path segment to prefix
-  the glob pattern with. If the last path segment is longer, files are
-  searched using the truncated prefix.
+  the glob pattern with. If the last path segment is longer, files are searched
+  using the truncated prefix.
+- `max_leading_length` is the maximum length to consider for the first segment
+  in relative paths (the part before the first slash). If the leading segment
+  is longer, it won't be recognized as a directory and completion will not be
+  performed. Tip: start relative paths with `./` to help detection.

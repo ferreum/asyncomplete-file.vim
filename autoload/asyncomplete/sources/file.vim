@@ -12,6 +12,7 @@ function! asyncomplete#sources#file#get_source_options(opts)
   let l:opts['config'] = extend({
         \ 'max_path_length': 256,
         \ 'max_glob_length': 16,
+        \ 'max_leading_length': 16,
         \ }, get(l:opts, 'config', {}))
   return l:opts
 endfunction
@@ -112,10 +113,21 @@ function! s:filename_map(prefix, cwd, base, escaped) abort
         \ }
 endfunction
 
+" match chars that can preceed a path
+let s:anchor_pattern = '\([^[:fname:]]\|[,=]\)'
+
 function! s:find_path(opt, ctx, typed) abort
   let l:typed = a:typed[-(a:opt['config']['max_path_length']):]
   let l:kw = substitute(l:typed, '^\s*', '', '')
-  while stridx(l:kw, '/') >= 0
+  let l:leading_limit = l:opt['config']['max_leading_length']
+  while 1
+    let l:slashidx = stridx(l:kw, '/')
+    if l:slashidx < 0
+      return ['', '', 0]
+    endif
+    if l:slashidx > l:leading_limit
+      let l:kw = matchstr(l:kw, s:anchor_pattern . '\zs[^/]\{,' . l:leading_limit . '}/.*')
+    endif
     if l:kw =~# '\\.'
       let l:path = s:goodpath(a:ctx, substitute(l:kw, '\\\(.\)', '\1', 'g'))
       if !empty(l:path)
@@ -129,9 +141,8 @@ function! s:find_path(opt, ctx, typed) abort
       endif
       return [l:kw, l:path, 0]
     endif
-    let l:kw = matchstr(l:kw, '\([^[:fname:]]\|[,=]\)\zs[\\[:fname:]].*')
+    let l:kw = matchstr(l:kw, s:anchor_pattern . '\zs[\\[:fname:]].*')
   endwhile
-  return ['', '', 0]
 endfunction
 
 function! s:goodpath(ctx, path) abort
