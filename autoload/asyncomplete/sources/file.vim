@@ -1,24 +1,7 @@
-function! s:filename_map(prefix, cwd, base) abort
-  if empty(a:base) || a:base ==# '.' || a:base ==# '..'
-    " filtered out later
-    return v:null
-  endif
-
-  let l:word = a:prefix . a:base
-
-  if isdirectory(a:cwd . '/' . a:base)
-    let l:menu = '[dir]'
-    let l:word .= '/'
-  else
-    let l:menu = '[file]'
-  endif
-
-  return {
-        \ 'menu': l:menu,
-        \ 'word': l:word,
-        \ 'icase': 1,
-        \ 'dup': 0
-        \ }
+function! asyncomplete#sources#file#get_source_options(opts)
+  return extend(extend({}, a:opts), {
+        \ 'triggers': {'*': ['/']},
+        \ })
 endfunction
 
 let s:last_job = ''
@@ -89,10 +72,27 @@ function! s:exit(filectx, channel, code) abort
   call asyncomplete#complete(a:filectx.opt.name, a:filectx.ctx, a:filectx.startcol, l:matches)
 endfunction
 
-function! asyncomplete#sources#file#get_source_options(opts)
-  return extend(extend({}, a:opts), {
-        \ 'triggers': {'*': ['/']},
-        \ })
+function! s:filename_map(prefix, cwd, base) abort
+  if empty(a:base) || a:base ==# '.' || a:base ==# '..'
+    " filtered out later
+    return v:null
+  endif
+
+  let l:word = a:prefix . a:base
+
+  if isdirectory(a:cwd . '/' . a:base)
+    let l:menu = '[dir]'
+    let l:word .= '/'
+  else
+    let l:menu = '[file]'
+  endif
+
+  return {
+        \ 'menu': l:menu,
+        \ 'word': l:word,
+        \ 'icase': 1,
+        \ 'dup': 0
+        \ }
 endfunction
 
 function! s:find_path(ctx, typed) abort
