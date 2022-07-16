@@ -62,7 +62,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
     let l:prefix = l:prefix . '/'
   endif
 
-  let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail)) . '*'
+  let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail, g:asyncomplete_matchfuzzy)) . '*'
   let l:script = 'shopt -s nullglob; cd ' . shellescape(l:cwd) . ' && printf ''%s\n'' ' . l:glob . ' | sort'
 
   let l:filectx = {
@@ -104,13 +104,16 @@ function! asyncomplete#sources#file#get_source_options(opts)
         \ })
 endfunction
 
-function! s:smartcasewildcard(str) abort
+function! s:smartcasewildcard(str, fuzzy) abort
   if a:str =~ '\u'
     return a:str
   endif
-  return s:icasewildcard(a:str)
+  return s:icasewildcard(a:str, a:fuzzy)
 endfunction
 
-function! s:icasewildcard(str) abort
-  return map(a:str, {i, c -> c =~ '\a' ? '[' . tolower(c) . toupper(c) . ']' : (c =~ '[.-_/]' ? c : shellescape(c))})
+function! s:icasewildcard(str, fuzzy) abort
+  return map(a:str, { i, c ->
+        \  (a:fuzzy && i >= 1 ? '*' : '') .
+        \  (c =~ '\a' ? '[' . tolower(c) . toupper(c) . ']' : (c =~ '[-._/]' ? c : shellescape(c)))
+        \ })
 endfunction
