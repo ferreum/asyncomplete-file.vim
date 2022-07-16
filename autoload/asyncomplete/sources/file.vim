@@ -1,14 +1,12 @@
-function! s:filename_map(prefix, file) abort
-  let l:base = fnamemodify(a:file, ':t')
-
-  if l:base ==# '.' || l:base ==# '..'
-    " filtered out below
+function! s:filename_map(prefix, cwd, base) abort
+  if empty(a:base) || a:base ==# '.' || a:base ==# '..'
+    " filtered out later
     return v:null
   endif
 
-  let l:word = a:prefix . l:base
+  let l:word = a:prefix . a:base
 
-  if isdirectory(a:file)
+  if isdirectory(a:cwd . '/' . a:base)
     let l:menu = '[dir]'
     let l:word .= '/'
   else
@@ -23,7 +21,15 @@ function! s:filename_map(prefix, file) abort
         \ }
 endfunction
 
-function! asyncomplete#sources#file#completor(opt, ctx)
+let s:last_job = ''
+function! asyncomplete#sources#file#completor(opt, ctx) abort
+  try
+    call job_stop(s:last_job)
+  catch
+    " first job or already stopped
+  endtry
+  let s:last_job = ''
+
   let l:bufnr = a:ctx['bufnr']
   let l:typed = a:ctx['typed']
   let l:col   = a:ctx['col']
@@ -35,34 +41,61 @@ function! asyncomplete#sources#file#completor(opt, ctx)
     return
   endif
 
+  let l:startcol = l:col - l:kwlen
+
   if l:kw !~ '^\(/\|\~\)'
     let l:cwd = expand('#' . l:bufnr . ':p:h') . '/' . l:kw
   else
-    let l:cwd = l:kw
+    let l:cwd = fnamemodify(l:kw, ':p')
   endif
 
-  let l:glob = escape(fnamemodify(l:cwd, ':t'), '`*\')
-  if has('win32')
-    let l:glob .= '*'
+  if l:cwd =~ '/$'
+    let l:tail = ''
   else
-    " need special pattern to include dotfiles
-    let l:glob .= '.\=*'
-  endif
-  let l:cwd  = fnamemodify(l:cwd, ':p:h')
-  let l:pre  = fnamemodify(l:kw, ':h')
-
-  if l:pre !~ '/$'
-    let l:pre = l:pre . '/'
+    let l:tail = fnamemodify(l:cwd, ':t')
+    let l:cwd = fnamemodify(l:cwd, ':h')
   endif
 
-  let l:cwdlen = strlen(l:cwd)
-  let l:startcol = l:col - l:kwlen
-  let l:matches = globpath(escape(l:cwd, ',*`\'), l:glob, 0, 1)
-  call map(l:matches, {key, val -> s:filename_map(l:pre, val)})
+  let l:prefix = fnamemodify(l:kw, ':h')
+
+  if l:prefix !~ '/$'
+    let l:prefix = l:prefix . '/'
+  endif
+
+  let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail)) . '*'
+  let l:script = 'shopt -s nullglob; cd ' . shellescape(l:cwd) . ' && printf ''%s\n'' ' . l:glob . ' | sort'
+
+  let l:filectx = {
+        \ 'opt': a:opt,
+        \ 'ctx': a:ctx,
+        \ 'startcol': l:startcol,
+        \ 'cwd': l:cwd,
+        \ 'prefix': l:prefix,
+        \ 'rawlist': [],
+        \ }
+
+  let s:last_job = job_start(['/usr/bin/bash', '-c', l:script], {
+        \ 'in_io': "null",
+        \ 'out_io': "pipe",
+        \ 'out_mode': "raw",
+        \ 'out_cb': function('s:stdout', [l:filectx.rawlist]),
+        \ 'exit_cb': function('s:exit', [l:filectx]),
+        \ })
+endfunction
+
+function! s:stdout(rawlist, channel, msg) abort
+  call add(a:rawlist, a:msg)
+endfunction
+
+function! s:exit(filectx, channel, code) abort
+  let l:matches = split(join(a:filectx.rawlist, ''), '\n')
+  let l:cwd = a:filectx.cwd
+  let l:prefix = a:filectx.prefix
+
+  call map(l:matches, {key, val -> s:filename_map(l:prefix, l:cwd, val)})
   call filter(l:matches, {i, m -> m != v:null})
-  call sort(l:matches, function('s:sort'))
 
-  call asyncomplete#complete(a:opt['name'], a:ctx, l:startcol, l:matches)
+  call asyncomplete#complete(a:filectx.opt.name, a:filectx.ctx, a:filectx.startcol, l:matches)
 endfunction
 
 function! asyncomplete#sources#file#get_source_options(opts)
@@ -71,12 +104,13 @@ function! asyncomplete#sources#file#get_source_options(opts)
         \ })
 endfunction
 
-function! s:sort(item1, item2) abort
-  if a:item1.menu ==# '[dir]' && a:item2.menu !=# '[dir]'
-    return -1
+function! s:smartcasewildcard(str) abort
+  if a:str =~ '\u'
+    return a:str
   endif
-  if a:item1.menu !=# '[dir]' && a:item2.menu ==# '[dir]'
-    return 1
-  endif
-  return 0
+  return s:icasewildcard(a:str)
+endfunction
+
+function! s:icasewildcard(str) abort
+  return map(a:str, {i, c -> c =~ '\a' ? '[' . tolower(c) . toupper(c) . ']' : (c =~ '[.-_/]' ? c : shellescape(c))})
 endfunction
