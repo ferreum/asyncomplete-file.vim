@@ -53,4 +53,6 @@ Note: `config` is optional. The shown values are the defaults.
 - `max_leading_length` is the maximum length to consider for the first segment
   in relative paths (the part before the first slash). If the leading segment
   is longer, it won't be recognized as a directory and completion will not be
-  performed. Tip: start relative paths with `./` to help detection.
+  performed.
+
+  _Tip: start relative paths with `./` to help detection._
