@@ -35,5 +35,17 @@ au User asyncomplete_setup call asyncomplete#register_source(asyncomplete#source
     \ 'allowlist': ['*'],
     \ 'priority': 10,
     \ 'completor': function('asyncomplete#sources#file#completor')
+    \ 'config': {
+    \    'max_path_length': 256,
+    \    'max_glob_length': 16,
+    \ },
     \ }))
 ```
+
+Note: `config` is optional. The shown values are the defaults.
+- `max_path_length` is the maximum length to search for an existing path to the
+  left of the cursor. If no existing directory is found, or there is no `/`
+  character, no file completion is performed.
+- `max_glob_length` is the maximum length of the last path segment to prefix
+  the glob pattern with. If the last path segment is longer, files are
+  searched using the truncated prefix.
