@@ -8,8 +8,8 @@ source with the following features:
 
 - Files are completed asynchronously
 - Full support for fuzzy matching
-- 'smartcase' behavior; see `:h 'smartcase'`
-- Uses 'isfname' option for detection, but also works on paths containing
+- Uses `'smartcase'` behavior; see `:h 'smartcase'`
+- Uses `'isfname'` option for detection, but also works on paths containing
   unusual characters
 - Detection of shell-escaped paths
 - Appends '/' to directories to help traversing paths
