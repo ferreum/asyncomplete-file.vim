@@ -40,8 +40,12 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
     let l:tail = ''
     let l:prefix = l:kw
   else
-    let l:tail = fnamemodify(l:cwd . '/', ':h:t')
-    let l:cwd = fnamemodify(l:cwd . '/', ':h:h') . '/'
+    if l:cwd !~# '/$'
+      " to simplify fnamemodify
+      let l:cwd .= '/'
+    endif
+    let l:tail = fnamemodify(l:cwd, ':h:t')
+    let l:cwd = fnamemodify(l:cwd, ':h:h')
     " strip tail; fnamemodify strips duplicate trailing slashes
     let l:prefix = matchstr(l:kw, '^.*/')
   endif
