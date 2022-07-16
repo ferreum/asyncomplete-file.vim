@@ -6,9 +6,13 @@ if has('win32') || has('win64')
 endif
 
 function! asyncomplete#sources#file#get_source_options(opts)
-  return extend(extend({}, a:opts), {
+  let l:opts = extend(extend({}, a:opts), {
         \ 'triggers': {'*': ['/']},
         \ })
+  let l:opts['config'] = extend({
+        \ 'max_path_length': 256,
+        \ }, get(l:opts, 'config', {}))
+  return l:opts
 endfunction
 
 let s:last_job = ''
@@ -23,7 +27,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
   let l:typed = a:ctx['typed']
   let l:col   = a:ctx['col']
 
-  let [l:kw, l:cwd, l:escaped] = s:find_path(a:ctx, l:typed)
+  let [l:kw, l:cwd, l:escaped] = s:find_path(a:opt, a:ctx, l:typed)
   let l:kwlen = len(l:kw)
 
   if l:kwlen < 1
@@ -105,8 +109,8 @@ function! s:filename_map(prefix, cwd, base, escaped) abort
         \ }
 endfunction
 
-function! s:find_path(ctx, typed) abort
-  let l:typed = a:typed[-get(g:, 'asyncomplete_max_filename', 256):]
+function! s:find_path(opt, ctx, typed) abort
+  let l:typed = a:typed[-(a:opt['config']['max_path_length']):]
   let l:kw = substitute(l:typed, '^\s*', '', '')
   while stridx(l:kw, '/') >= 0
     if l:kw =~# '\\.'
