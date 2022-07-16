@@ -106,7 +106,7 @@ endfunction
 
 function! s:smartcasewildcard(str, fuzzy) abort
   if a:str =~ '\u'
-    return a:str
+    return shellescape(a:str)
   endif
   return s:icasewildcard(a:str, a:fuzzy)
 endfunction
@@ -114,6 +114,6 @@ endfunction
 function! s:icasewildcard(str, fuzzy) abort
   return map(a:str, { i, c ->
         \  (a:fuzzy && i >= 1 ? '*' : '') .
-        \  (c =~ '\a' ? '[' . tolower(c) . toupper(c) . ']' : (c =~ '[-._/]' ? c : shellescape(c)))
+        \  (c =~# '^\a$' ? '[' . tolower(c) . toupper(c) . ']' : (c =~# '^[-._/]$' ? c : shellescape(c)))
         \ })
 endfunction
