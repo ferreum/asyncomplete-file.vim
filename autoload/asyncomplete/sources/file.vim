@@ -110,7 +110,7 @@ function! s:find_path(ctx, typed) abort
     endif
     let l:path = s:goodpath(a:ctx, l:kw)
     if !empty(l:path)
-      if l:path =~# '[^\\]\(\\\\\)*\\$'
+      if l:path =~# '\\$' && l:kw !=# '\\.'
         return [l:kw, l:path[:-2], 1]
       endif
       return [l:kw, l:path, 0]
