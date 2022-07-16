@@ -34,7 +34,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
   endif
 
   let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail, get(g:, 'asyncomplete_matchfuzzy', 0))) . '*'
-  let l:script = 'shopt -s nullglob; cd ' . shellescape(l:cwd) . ' && printf ''%s\n'' ' . l:glob . ' | sort'
+  let l:script = 'shopt -s nullglob; cd ' . shellescape(l:cwd) . ' && printf ''%s\n'' ' . l:glob
 
   let l:filectx = {
         \ 'opt': a:opt,
