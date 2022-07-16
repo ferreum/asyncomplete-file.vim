@@ -1,3 +1,10 @@
+if has('win32') || has('win64')
+  echohl ErrorMsg
+  echom "this version of asyncomplete-file.vim does not work on MS-Windows"
+  echohl None
+  finish
+endif
+
 function! asyncomplete#sources#file#get_source_options(opts)
   return extend(extend({}, a:opts), {
         \ 'triggers': {'*': ['/']},
