@@ -49,11 +49,11 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
     let l:cwd = fnamemodify(l:kw, ':p')
   endif
 
-  if l:cwd =~ '/$'
+  if l:kw =~ '/$'
     let l:tail = ''
   else
-    let l:tail = fnamemodify(l:cwd, ':t')
-    let l:cwd = fnamemodify(l:cwd, ':h')
+    let l:tail = fnamemodify(l:cwd . '/', ':h:t')
+    let l:cwd = fnamemodify(l:cwd . '/', ':h:h')
   endif
 
   let l:prefix = fnamemodify(l:kw, ':h')
