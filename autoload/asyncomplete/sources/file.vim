@@ -30,23 +30,14 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
   endtry
   let s:last_job = ''
 
-  let l:bufnr = a:ctx['bufnr']
   let l:typed = a:ctx['typed']
   let l:col   = a:ctx['col']
 
-  let l:kw    = matchstr(l:typed, '\f*$')
+  let [l:kw, l:cwd] = s:find_path(a:ctx, l:typed)
   let l:kwlen = len(l:kw)
 
-  if l:kwlen < 1 || stridx(l:kw, '/') < 0
+  if l:kwlen < 1
     return
-  endif
-
-  let l:startcol = l:col - l:kwlen
-
-  if l:kw !~ '^\(/\|\~\)'
-    let l:cwd = expand('#' . l:bufnr . ':p:h') . '/' . l:kw
-  else
-    let l:cwd = fnamemodify(l:kw, ':p')
   endif
 
   if l:kw =~ '/$'
@@ -68,7 +59,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
   let l:filectx = {
         \ 'opt': a:opt,
         \ 'ctx': a:ctx,
-        \ 'startcol': l:startcol,
+        \ 'startcol': l:col - l:kwlen,
         \ 'cwd': l:cwd,
         \ 'prefix': l:prefix,
         \ 'rawlist': [],
@@ -102,6 +93,39 @@ function! asyncomplete#sources#file#get_source_options(opts)
   return extend(extend({}, a:opts), {
         \ 'triggers': {'*': ['/']},
         \ })
+endfunction
+
+function! s:find_path(ctx, typed) abort
+  let l:remaining = a:typed
+  let l:tried = ''
+  while l:remaining =~ '\S'
+    let l:add = matchstr(l:remaining, '\f\+\s*$')
+    if empty(l:add)
+      return ["", ""]
+    endif
+    let l:tried = l:add . l:tried
+    let l:path = s:goodpath(a:ctx, l:tried)
+    if !empty(l:path)
+      return [l:tried, l:path]
+    endif
+    let l:remaining = l:remaining[:(-len(l:add) - 1)]
+  endwhile
+  return ["", ""]
+endfunction
+
+function! s:goodpath(ctx, path) abort
+  if empty(a:path) || stridx(a:path, '/') < 0
+    return ''
+  endif
+  if a:path !~ '^\(/\|\~\)'
+    let l:abspath = expand('#' . a:ctx.bufnr . ':p:h') . '/' . a:path
+  else
+    let l:abspath = fnamemodify(a:path, ':p')
+  endif
+  if !isdirectory(fnamemodify(l:abspath, ':h'))
+    return ''
+  endif
+  return l:abspath
 endfunction
 
 function! s:smartcasewildcard(str, fuzzy) abort
