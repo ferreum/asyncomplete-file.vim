@@ -37,7 +37,7 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
   let l:kw    = matchstr(l:typed, '\f*$')
   let l:kwlen = len(l:kw)
 
-  if empty(l:kwlen) || stridx(l:kw, '/') < 0
+  if l:kwlen < 1 || stridx(l:kw, '/') < 0
     return
   endif
 
