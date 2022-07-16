@@ -99,32 +99,25 @@ function! s:filename_map(prefix, cwd, base, escaped) abort
 endfunction
 
 function! s:find_path(ctx, typed) abort
-  let l:remaining = a:typed
-  let l:tried = ''
-  while 1
-    let l:add = matchstr(l:remaining, '\f\+[[:space:]*?&\\]*$')
-    if empty(l:add)
-      return ["", "", 0]
-    endif
-    let l:tried = l:add . l:tried
-    let l:path = s:goodpath(a:ctx, l:tried)
+  let l:typed = a:typed[-get(g:, 'asyncomplete_max_filename', 256):]
+  let l:kw = substitute(l:typed, '^\s*', '', '')
+  while stridx(l:kw, '/') >= 0
+    let l:path = s:goodpath(a:ctx, l:kw)
     if !empty(l:path)
-      return [l:tried, l:path, 0]
+      return [l:kw, l:path, 0]
     endif
-    if l:tried =~# '\\.'
-      let l:path = s:goodpath(a:ctx, substitute(l:tried, '\\\(.\)', '\1', 'g'))
+    if l:kw =~# '\\.'
+      let l:path = s:goodpath(a:ctx, substitute(l:kw, '\\\(.\)', '\1', 'g'))
       if !empty(l:path)
-        return [l:tried, l:path, 1]
+        return [l:kw, l:path, 1]
       endif
     endif
-    let l:remaining = l:remaining[:(-len(l:add) - 1)]
+    let l:kw = matchstr(l:kw, '\([^*?&\\[:fname:]]\|[,]\)\zs[*?&\\[:fname:]].*')
   endwhile
+  return ['', '', 0]
 endfunction
 
 function! s:goodpath(ctx, path) abort
-  if empty(a:path) || stridx(a:path, '/') < 0
-    return ''
-  endif
   let l:path = substitute(a:path, '//\+', '/', 'g')
   if l:path !~ '^\(/\|\~\)'
     let l:abspath = expand('#' . a:ctx.bufnr . ':p:h') . '/' . l:path
