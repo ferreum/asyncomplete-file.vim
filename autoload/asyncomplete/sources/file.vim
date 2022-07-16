@@ -112,7 +112,7 @@ function! s:find_path(ctx, typed) abort
         return [l:kw, l:path, 1]
       endif
     endif
-    let l:kw = matchstr(l:kw, '\([^*?&\\[:fname:]]\|[,]\)\zs[*?&\\[:fname:]].*')
+    let l:kw = matchstr(l:kw, '\([^[:fname:]]\|[,=]\)\zs[\\[:fname:]].*')
   endwhile
   return ['', '', 0]
 endfunction
