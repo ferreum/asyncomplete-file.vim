@@ -1,19 +1,23 @@
 function! s:filename_map(prefix, file) abort
-  let l:abbr = fnamemodify(a:file, ':t')
-  let l:word = a:prefix . l:abbr
+  let l:base = fnamemodify(a:file, ':t')
+
+  if l:base ==# '.' || l:base ==# '..'
+    " filtered out below
+    return v:null
+  endif
+
+  let l:word = a:prefix . l:base
 
   if isdirectory(a:file)
     let l:menu = '[dir]'
-    let l:abbr = '/' . l:abbr
+    let l:word .= '/'
   else
     let l:menu = '[file]'
-    let l:abbr = l:abbr
   endif
 
   return {
         \ 'menu': l:menu,
         \ 'word': l:word,
-        \ 'abbr': l:abbr,
         \ 'icase': 1,
         \ 'dup': 0
         \ }
@@ -24,10 +28,10 @@ function! asyncomplete#sources#file#completor(opt, ctx)
   let l:typed = a:ctx['typed']
   let l:col   = a:ctx['col']
 
-  let l:kw    = matchstr(l:typed, '<\@<!\(\.\{0,2}/\|\~\).*$')
+  let l:kw    = matchstr(l:typed, '\f*$')
   let l:kwlen = len(l:kw)
 
-  if l:kwlen < 1
+  if empty(l:kwlen) || stridx(l:kw, '/') < 0
     return
   endif
 
@@ -37,10 +41,12 @@ function! asyncomplete#sources#file#completor(opt, ctx)
     let l:cwd = l:kw
   endif
 
+  let l:glob = escape(fnamemodify(l:cwd, ':t'), '`*\')
   if has('win32')
-    let l:glob = fnamemodify(l:cwd, ':t') . '*'
+    let l:glob .= '*'
   else
-    let l:glob = fnamemodify(l:cwd, ':t') . '.\=[^.]*'
+    " need special pattern to include dotfiles
+    let l:glob .= '.\=*'
   endif
   let l:cwd  = fnamemodify(l:cwd, ':p:h')
   let l:pre  = fnamemodify(l:kw, ':h')
@@ -49,11 +55,12 @@ function! asyncomplete#sources#file#completor(opt, ctx)
     let l:pre = l:pre . '/'
   endif
 
-  let l:cwdlen   = strlen(l:cwd)
+  let l:cwdlen = strlen(l:cwd)
   let l:startcol = l:col - l:kwlen
-  let l:files    = split(globpath(l:cwd, l:glob), '\n')
-  let l:matches  = map(l:files, {key, val -> s:filename_map(l:pre, val)})
-  let l:matches  = sort(l:matches, function('s:sort'))
+  let l:matches = globpath(escape(l:cwd, ',*`\'), l:glob, 0, 1)
+  call map(l:matches, {key, val -> s:filename_map(l:pre, val)})
+  call filter(l:matches, {i, m -> m != v:null})
+  call sort(l:matches, function('s:sort'))
 
   call asyncomplete#complete(a:opt['name'], a:ctx, l:startcol, l:matches)
 endfunction
@@ -73,4 +80,3 @@ function! s:sort(item1, item2) abort
   endif
   return 0
 endfunction
-
