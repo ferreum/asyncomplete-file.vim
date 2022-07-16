@@ -25,15 +25,12 @@ function! asyncomplete#sources#file#completor(opt, ctx) abort
 
   if l:kw =~ '/$'
     let l:tail = ''
+    let l:prefix = l:kw
   else
     let l:tail = fnamemodify(l:cwd . '/', ':h:t')
-    let l:cwd = fnamemodify(l:cwd . '/', ':h:h')
-  endif
-
-  let l:prefix = fnamemodify(l:kw, ':h')
-
-  if l:prefix !~ '/$'
-    let l:prefix = l:prefix . '/'
+    let l:cwd = fnamemodify(l:cwd . '/', ':h:h') . '/'
+    " strip tail; fnamemodify strips duplicate trailing slashes
+    let l:prefix = matchstr(l:kw, '^.*/')
   endif
 
   let l:glob = (empty(l:tail) ? '{.,}' : s:smartcasewildcard(l:tail, get(g:, 'asyncomplete_matchfuzzy', 0))) . '*'
@@ -116,10 +113,11 @@ function! s:goodpath(ctx, path) abort
   if empty(a:path) || stridx(a:path, '/') < 0
     return ''
   endif
-  if a:path !~ '^\(/\|\~\)'
-    let l:abspath = expand('#' . a:ctx.bufnr . ':p:h') . '/' . a:path
+  let l:path = substitute(a:path, '//\+', '/', 'g')
+  if l:path !~ '^\(/\|\~\)'
+    let l:abspath = expand('#' . a:ctx.bufnr . ':p:h') . '/' . l:path
   else
-    let l:abspath = fnamemodify(a:path, ':p')
+    let l:abspath = fnamemodify(l:path, ':p')
   endif
   if !isdirectory(fnamemodify(l:abspath, ':h'))
     return ''
