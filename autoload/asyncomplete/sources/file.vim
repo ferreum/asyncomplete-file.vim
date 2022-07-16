@@ -123,7 +123,7 @@ let s:anchor_pattern = '\([^[:fname:]]\|[,:=]\)'
 function! s:find_path(opt, ctx, typed) abort
   let l:typed = a:typed[-(a:opt['config']['max_path_length']):]
   let l:kw = substitute(l:typed, '^\s*', '', '')
-  let l:leading_limit = l:opt['config']['max_leading_length']
+  let l:leading_limit = a:opt['config']['max_leading_length']
   while 1
     let l:slashidx = stridx(l:kw, '/')
     if l:slashidx < 0
