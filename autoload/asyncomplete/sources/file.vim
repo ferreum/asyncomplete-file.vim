@@ -131,6 +131,9 @@ function! s:find_path(opt, ctx, typed) abort
     endif
     if l:slashidx > l:leading_limit
       let l:kw = matchstr(l:kw, s:anchor_pattern . '\zs[^/]\{,' . l:leading_limit . '}/.*')
+      if empty(l:kw)
+        return ['', '', 0]
+      endif
     endif
     if l:kw =~# '\\.'
       let l:path = s:goodpath(a:ctx, substitute(l:kw, '\\\(.\)', '\1', 'g'))
